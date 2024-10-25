@@ -7,17 +7,17 @@ class TagListItem(QWidget):
         super().__init__(parent)
         self.parent = parent
         if not self.objectName():
-            self.setObjectName("Tag")
+            self.setObjectName(u"Tag")
         self.resize(250, 60)
 
         self.horizontalLayout = QHBoxLayout(self)
-        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
 
         self.label = QLabel(self)
-        self.label.setObjectName("label")
+        self.label.setObjectName(u"label")
         self.horizontalLayout.addWidget(self.label)
         self.label.setText(
-            QCoreApplication.translate("TagListItem", "TextLabel", None)
+            QCoreApplication.translate("TagListItem", u"TextLabel", None)
         )
 
         self.horizontalSpacer = QSpacerItem(
@@ -28,15 +28,15 @@ class TagListItem(QWidget):
         self.horizontalLayout.addItem(self.horizontalSpacer)
 
         self.deleteButton = QToolButton(self)
-        self.deleteButton.setObjectName("deleteButton")
+        self.deleteButton.setObjectName(u"deleteButton")
         self.horizontalLayout.addWidget(self.deleteButton)
         self.deleteButton.setText(
-            QCoreApplication.translate("TagListItem", "x", None)
+            QCoreApplication.translate("TagListItem", u"x", None)
         )
         self.deleteButton.clicked.connect(self.deleteButtonClicked)
 
         self.setWindowTitle(
-            QCoreApplication.translate("TagListItem", "Form", None)
+            QCoreApplication.translate("TagListItem", u"Form", None)
         )
 
         QMetaObject.connectSlotsByName(self)

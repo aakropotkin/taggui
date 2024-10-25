@@ -1,29 +1,46 @@
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
+from PySide6.QtCore import QRect, QCoreApplication, QMetaObject
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QMenuBar
 from PySide6.QtWidgets import QListWidgetItem
 
-from ui_main_window import Ui_MainWindow
+from tag_list import TagList
 from tag_list_item import TagListItem
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
+        if not self.objectName():
+            self.setObjectName(u"MainWindow")
+        self.resize(250, 600)
+
+        self.tagList = TagList(self)
+        self.setCentralWidget(self.tagList)
+
+        self.menubar = QMenuBar(self)
+        self.menubar.setObjectName(u"menubar")
+        self.menubar.setGeometry(QRect(0, 0, 250, 22))
+        self.setMenuBar(self.menubar)
+
         for i in range(5):
             item = QListWidgetItem()
             widget = TagListItem(self)
             widget.setText(f"{i}")
             item.setSizeHint(widget.sizeHint())
-            self.ui.listWidget.addItem(item)
-            self.ui.listWidget.setItemWidget(item, widget)
+            self.tagList.addItem(item)
+            self.tagList.setItemWidget(item, widget)
+
+        self.setWindowTitle(
+            QCoreApplication.translate("MainWindow", u"MainWindow", None)
+        )
+
+        QMetaObject.connectSlotsByName(self)
 
     def removeItem(self, text):
-        for row in range(self.ui.listWidget.count()):
-            item = self.ui.listWidget.item(row)
-            widget = self.ui.listWidget.itemWidget(item)
+        for row in range(self.tagList.count()):
+            item = self.tagList.item(row)
+            widget = self.tagList.itemWidget(item)
             if widget.getText() == text:
-                self.ui.listWidget.takeItem(row)
+                self.tagList.takeItem(row)
                 return
 
 
