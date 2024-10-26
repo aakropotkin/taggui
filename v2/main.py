@@ -34,36 +34,50 @@ class ImageTagManager(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         # Layouts
-        self.main_layout = QVBoxLayout(self.central_widget)
-        self.image_label = QLabel(self)
-        self.image_label.setAlignment(Qt.AlignCenter)
-        self.main_layout.addWidget(self.image_label)
-
-        self.tag_line_edit = QLineEdit(self)
-        self.tag_line_edit.setPlaceholderText("Tags (comma separated)")
-        self.main_layout.addWidget(self.tag_line_edit)
-
-        self.description_line_edit = QLineEdit(self)
-        self.description_line_edit.setPlaceholderText("Description")
-        self.main_layout.addWidget(self.description_line_edit)
-
-        self.load_button = QPushButton("Load Tags & Description", self)
-        self.load_button.clicked.connect(self.load_tags_and_description)
-        self.main_layout.addWidget(self.load_button)
-
-        self.save_button = QPushButton("Save Tags & Description", self)
-        self.save_button.clicked.connect(self.save_tags_and_description)
-        self.main_layout.addWidget(self.save_button)
+        self.main_layout = QHBoxLayout(self.central_widget)
+        self.center_widget = QWidget(self.central_widget)
+        self.center_layout = QVBoxLayout(self.center_widget)
 
         # Directory tree view
         self.tree_view = QTreeView(self)
         self.model = QFileSystemModel()
         self.model.setRootPath("")
         self.tree_view.setModel(self.model)
+
+        # Add tree navigator then the main panel
+        self.main_layout.addWidget(self.tree_view)
+        self.main_layout.addWidget(self.center_widget)
+
+        # Add image viewer
+        self.image_label = QLabel(self)
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.center_layout.addWidget(self.image_label)
+
+        # Tag editor
+        self.tag_line_edit = QLineEdit(self)
+        self.tag_line_edit.setPlaceholderText("Tags (comma separated)")
+        self.center_layout.addWidget(self.tag_line_edit)
+
+        # Description editor
+        self.description_line_edit = QLineEdit(self)
+        self.description_line_edit.setPlaceholderText("Description")
+        self.center_layout.addWidget(self.description_line_edit)
+
+        # self.load_button = QPushButton("Load Tags & Description", self)
+        # self.load_button.clicked.connect(self.load_tags_and_description)
+        # self.main_layout.addWidget(self.load_button)
+
+        # Save button
+        self.save_button = QPushButton("Save", self)
+        self.save_button.clicked.connect(self.save_tags_and_description)
+        self.center_layout.addWidget(self.save_button)
+
         # Start from home directory
         self.tree_view.setRootIndex(self.model.index(os.path.expanduser("~")))
         self.tree_view.clicked.connect(self.on_tree_view_clicked)
-        self.main_layout.addWidget(self.tree_view)
+        self.tree_view.hideColumn(1)  # Hide size
+        self.tree_view.hideColumn(2)  # Hide type
+        self.tree_view.hideColumn(3)  # Hide date modified
 
         self.load_images_in_directory()
 
@@ -87,7 +101,7 @@ class ImageTagManager(QMainWindow):
             pixmap = QPixmap.fromImageReader(image_reader)
             pixmap.setDevicePixelRatio(self.devicePixelRatio())
             pixmap = pixmap.scaled(
-                self.size() * pixmap.devicePixelRatio(),
+                self.image_label.size() * pixmap.devicePixelRatio(),
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
@@ -158,6 +172,12 @@ class ImageTagManager(QMainWindow):
         elif event.key() == Qt.Key_Left:
             if self.current_image_index > 0:
                 self.load_image(self.current_image_index - 1)
+
+    def resizeEvent(self, event):
+        # Resize the image widget
+        if not self.image_paths:
+            return
+        self.load_image(self.current_image_index)
 
 
 if __name__ == "__main__":
