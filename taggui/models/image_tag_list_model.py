@@ -1,6 +1,5 @@
 from PySide6.QtCore import QMimeData, QModelIndex, QStringListModel, Qt
 
-
 class ImageTagListModel(QStringListModel):
     def dropMimeData(self, data: QMimeData, action: Qt.DropAction, row: int,
                      column: int, parent: QModelIndex) -> bool:

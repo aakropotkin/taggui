@@ -11,6 +11,7 @@ from models.tag_counter_model import TagCounterModel
 from utils.image import Image
 from utils.settings import DEFAULT_SETTINGS, get_settings
 from utils.text_edit_item_delegate import TextEditItemDelegate
+from models.image_tag_delegate import ImageTagDelegate
 from utils.utils import get_confirmation_dialog_reply
 from widgets.image_list import ImageList
 
@@ -96,7 +97,8 @@ class ImageTagsList(QListView):
         super().__init__()
         self.image_tag_list_model = image_tag_list_model
         self.setModel(self.image_tag_list_model)
-        self.setItemDelegate(TextEditItemDelegate(self))
+        #self.setItemDelegate(TextEditItemDelegate(self))
+        self.setItemDelegate(ImageTagDelegate(self))
         self.setSelectionMode(
             QAbstractItemView.SelectionMode.ExtendedSelection)
         self.setWordWrap(True)
