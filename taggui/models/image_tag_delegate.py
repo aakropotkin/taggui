@@ -7,14 +7,14 @@ class ImageTagDelegate(QStyledItemDelegate):
         self.textRect = option.rect.adjusted(
             0,
             0,
-            (option.rect.width() / 5) * 4,
+            option.rect.width() - 25,
             0
         )
         self.buttonRect = option.rect.adjusted(
-            (option.rect.width() / 5) * 4,
-            0,
-            0,
-            0
+            option.rect.width() - 25,
+            7,
+            -7,
+            -7
         )
         painter.drawText(self.textRect, Qt.AlignLeft, tag)
         painter.fillRect(self.buttonRect, Qt.lightGray)
