@@ -32,11 +32,15 @@ class ImageTagManager(QMainWindow):
         # Central widget
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
+        self.central_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
+                                          QSizePolicy.Policy.Expanding)
 
         # Layouts
         self.main_layout = QHBoxLayout(self.central_widget)
         self.center_widget = QWidget(self.central_widget)
         self.center_layout = QVBoxLayout(self.center_widget)
+        self.image_nav_widget = QWidget(self.center_widget)
+        self.image_nav_layout = QHBoxLayout(self.image_nav_widget)
 
         # Directory tree view
         self.tree_view = QTreeView(self)
@@ -49,7 +53,7 @@ class ImageTagManager(QMainWindow):
         self.tree_view.hideColumn(1)  # Hide size
         self.tree_view.hideColumn(2)  # Hide type
         self.tree_view.hideColumn(3)  # Hide date modified
-        self.tree_view.setMinimumSize(QSize(1, 1))
+        self.tree_view.setMinimumSize(QSize(50, 50))
 
         # Add a split
         self.horizontal_split = QSplitter(Qt.Horizontal)
@@ -61,12 +65,25 @@ class ImageTagManager(QMainWindow):
         self.horizontal_split.setStretchFactor(1, 7)
 
         # Add image viewer
+        self.center_layout.addWidget(self.image_nav_widget)
+        self.image_nav_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
+                                            QSizePolicy.Policy.Expanding)
+        self.image_left_button = QPushButton("<", self)
+        self.image_left_button.clicked.connect(self.prev_image)
+        self.image_left_button.setSizePolicy(QSizePolicy.Minimum,
+                                             QSizePolicy.Minimum)
+        self.image_right_button = QPushButton(">", self)
+        self.image_right_button.clicked.connect(self.next_image)
+        self.image_right_button.setSizePolicy(QSizePolicy.Minimum,
+                                              QSizePolicy.Minimum)
         self.image_label = QLabel(self)
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding,
                                        QSizePolicy.Policy.Expanding)
-        self.image_label.setMinimumSize(QSize(1, 1))
-        self.center_layout.addWidget(self.image_label)
+        self.image_label.setMinimumSize(QSize(100, 100))
+        self.image_nav_layout.addWidget(self.image_left_button)
+        self.image_nav_layout.addWidget(self.image_label)
+        self.image_nav_layout.addWidget(self.image_right_button)
 
         # Tag editor
         self.tag_line_edit = QLineEdit(self)
@@ -163,11 +180,11 @@ class ImageTagManager(QMainWindow):
         with open(description_file, 'w') as f:
             f.write(self.description_line_edit.text())
 
-        QMessageBox.information(
-            self,
-            "Success",
-            "Tags and description saved successfully!"
-        )
+        #QMessageBox.information(
+        #    self,
+        #    "Success",
+        #    "Tags and description saved successfully!"
+        #)
 
     def on_tree_view_clicked(self, index: QModelIndex):
         self.current_directory = self.model.filePath(index)
@@ -175,13 +192,19 @@ class ImageTagManager(QMainWindow):
             self.current_directory = os.path.dirname(self.current_directory)
         self.load_images_in_directory()
 
+    def next_image(self):
+        if self.current_image_index < len(self.image_paths) - 1:
+            self.load_image(self.current_image_index + 1)
+
+    def prev_image(self):
+        if self.current_image_index > 0:
+            self.load_image(self.current_image_index - 1)
+
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key_Right:
-            if self.current_image_index < len(self.image_paths) - 1:
-                self.load_image(self.current_image_index + 1)
+            self.next_image()
         elif event.key() == Qt.Key_Left:
-            if self.current_image_index > 0:
-                self.load_image(self.current_image_index - 1)
+            self.prev_image()
 
     def resizeEvent(self, event):
         # Resize the image widget
@@ -192,6 +215,14 @@ class ImageTagManager(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    # Get active screen
+    screen = app.primaryScreen()
     window = ImageTagManager()
+    # Move window to active screen
+    geom = screen.geometry()
+    x = geom.x() + geom.width() // 2 - window.width() // 2
+    y = geom.y() + geom.height() // 2 - window.height() // 2
+    window.move(x, y)
+
     window.show()
     sys.exit(app.exec())
