@@ -14,10 +14,65 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QMessageBox,
     QSizePolicy,
-    QSplitter
+    QSplitter,
+    QScrollArea
 )
 from PySide6.QtGui import QKeyEvent, QImageReader, QPixmap
 from PySide6.QtCore import Qt, QModelIndex, QSize
+
+class TagAreaWidget(QWidget):
+    def __init__(self, tags=[]):
+        super().__init__()
+        self.tags = tags
+
+        # Main Layout
+        self.main_layout = QVBoxLayout(self)
+        self.setLayout(self.main_layout)
+
+        # Scroll area to hold tags
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_widget = QWidget(self)
+        self.scroll_layout = QVBoxLayout(self.scroll_widget)
+        self.scroll_area.setWidget(self.scroll_widget)
+        self.main_layout.addWidget(self.scroll_area)
+
+    def update_tags(self):
+        # Clear existing tags
+        for i in reversed(range(self.scroll_layout.count())):
+            widget = self.scroll_layout.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        # Add tags with delete button
+        for tag in self.tags:
+            tag_layout = QHBoxLayout()
+
+            # Tag label
+            tag_label = QLabel(tag)
+            tag_layout.addWidget(tag_label)
+
+            # "X" button to delete tag
+            delete_button = QPushButton("X")
+            delete_button.setFixedSize(20, 20)
+            delete_button.clicked.connect(lambda _, t=tag: self.remove_tag(t))
+            tag_layout.addWidget(delete_button)
+
+            # Add to the scroll layout
+            tag_container = QWidget()
+            tag_container.setLayout(tag_layout)
+            self.scroll_layout.addWidget(tag_container)
+
+    def add_tag(self, tag):
+        if not tag in self.tags:
+            self.tags.add(tag)
+            self.update_tags()
+
+    def remove_tag(self, tag):
+        if tag in self.tags:
+            self.tags.remove(tag)
+            self.update_tags()
+
 
 class ImageTagManager(QMainWindow):
     def __init__(self):
@@ -105,6 +160,11 @@ class ImageTagManager(QMainWindow):
                                     QSizePolicy.Expanding)
         self.editors_layout.addWidget(self.tag_edit)
 
+        # Tag viewer
+        self.tag_viewer = TagAreaWidget()
+        self.editors_layout.addWidget(self.tag_viewer)
+
+
         # Description editor
         self.description_edit_label = QLabel(self)
         self.description_edit_label.setText("Description")
@@ -174,6 +234,8 @@ class ImageTagManager(QMainWindow):
             with open(tags_file, 'r') as f:
                 tags = f.read()
                 self.tag_edit.setText(tags)
+                self.tag_viewer.tags = [s for s in tags.split(", ") if s]
+                self.tag_viewer.update_tags()
 
         # Load description
         if os.path.exists(description_file):
@@ -228,6 +290,8 @@ class ImageTagManager(QMainWindow):
         elif event.key() == Qt.Key_Left:
             self.prev_image()
 
+    # TODO: This needs to be pushed down into the image nav widget.
+    # Currently resizing panels won't trigger image resizing.
     def resizeEvent(self, event):
         # Resize the image widget
         if not self.image_paths:
