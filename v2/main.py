@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QLabel,
-    QLineEdit,
+    QTextEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -55,7 +55,7 @@ class ImageTagManager(QMainWindow):
         self.tree_view.hideColumn(3)  # Hide date modified
         self.tree_view.setMinimumSize(QSize(50, 50))
 
-        # Add a split
+        # Add a split between directory tree and center panel
         self.horizontal_split = QSplitter(Qt.Horizontal)
         self.main_layout.addWidget(self.horizontal_split)
         # Add tree navigator then the center panel
@@ -64,8 +64,13 @@ class ImageTagManager(QMainWindow):
         self.horizontal_split.addWidget(self.center_widget)
         self.horizontal_split.setStretchFactor(1, 7)
 
+        # Add split between tag editors and image navigation
+        self.vertical_split = QSplitter(Qt.Vertical)
+        self.center_layout.addWidget(self.vertical_split)
+
         # Add image viewer
-        self.center_layout.addWidget(self.image_nav_widget)
+        self.vertical_split.addWidget(self.image_nav_widget)
+        self.vertical_split.setStretchFactor(0, 7)
         self.image_nav_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
                                             QSizePolicy.Policy.Expanding)
         self.image_left_button = QPushButton("<", self)
@@ -85,20 +90,37 @@ class ImageTagManager(QMainWindow):
         self.image_nav_layout.addWidget(self.image_label)
         self.image_nav_layout.addWidget(self.image_right_button)
 
+        # Editors panel
+        self.editors_widget = QWidget(self)
+        self.editors_layout = QVBoxLayout(self.editors_widget)
+        self.vertical_split.addWidget(self.editors_widget)
+
         # Tag editor
-        self.tag_line_edit = QLineEdit(self)
-        self.tag_line_edit.setPlaceholderText("Tags (comma separated)")
-        self.center_layout.addWidget(self.tag_line_edit)
+        self.tag_edit_label = QLabel(self)
+        self.tag_edit_label.setText("Tags")
+        self.editors_layout.addWidget(self.tag_edit_label)
+        self.tag_edit = QTextEdit(self)
+        self.tag_edit.setPlaceholderText("Tags (comma separated)")
+        self.tag_edit.setSizePolicy(QSizePolicy.Expanding,
+                                    QSizePolicy.Expanding)
+        self.editors_layout.addWidget(self.tag_edit)
 
         # Description editor
-        self.description_line_edit = QLineEdit(self)
-        self.description_line_edit.setPlaceholderText("Description")
-        self.center_layout.addWidget(self.description_line_edit)
+        self.description_edit_label = QLabel(self)
+        self.description_edit_label.setText("Description")
+        self.editors_layout.addWidget(self.description_edit_label)
+        self.description_edit = QTextEdit(self)
+        self.description_edit.setPlaceholderText(
+            "A brief paragraph or sentence"
+        )
+        self.description_edit.setSizePolicy(QSizePolicy.Expanding,
+                                            QSizePolicy.Expanding)
+        self.editors_layout.addWidget(self.description_edit)
 
         # Save button
         self.save_button = QPushButton("Save", self)
         self.save_button.clicked.connect(self.save_tags_and_description)
-        self.center_layout.addWidget(self.save_button)
+        self.editors_layout.addWidget(self.save_button)
 
         self.load_images_in_directory()
 
@@ -151,13 +173,13 @@ class ImageTagManager(QMainWindow):
         if os.path.exists(tags_file):
             with open(tags_file, 'r') as f:
                 tags = f.read()
-                self.tag_line_edit.setText(tags)
+                self.tag_edit.setText(tags)
 
         # Load description
         if os.path.exists(description_file):
             with open(description_file, 'r') as f:
                 description = f.read()
-                self.description_line_edit.setText(description)
+                self.description_edit.setText(description)
 
     def save_tags_and_description(self):
         if not self.image_paths:
@@ -174,11 +196,11 @@ class ImageTagManager(QMainWindow):
 
         # Save tags
         with open(tags_file, 'w') as f:
-            f.write(self.tag_line_edit.text())
+            f.write(self.tag_edit.text())
 
         # Save description
         with open(description_file, 'w') as f:
-            f.write(self.description_line_edit.text())
+            f.write(self.description_edit.text())
 
         #QMessageBox.information(
         #    self,
