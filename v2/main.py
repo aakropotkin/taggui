@@ -171,6 +171,8 @@ class ImageTagManager(QMainWindow):
 
     def on_tree_view_clicked(self, index: QModelIndex):
         self.current_directory = self.model.filePath(index)
+        if not os.path.isdir(self.current_directory):
+            self.current_directory = os.path.dirname(self.current_directory)
         self.load_images_in_directory()
 
     def keyPressEvent(self, event: QKeyEvent):
