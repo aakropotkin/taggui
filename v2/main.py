@@ -132,6 +132,9 @@ class ImageTagManager(QMainWindow):
         self.load_images_in_directory()
 
     def load_images_in_directory(self):
+        cancel = self.prompt_for_save_if_dirty()
+        if cancel:
+            return
         # Get image files from the current directory
         if self.current_directory:
             self.image_paths = [
@@ -190,6 +193,46 @@ class ImageTagManager(QMainWindow):
                 description = f.read()
                 self.description_edit.setText(description)
 
+    def is_dirty(self):
+        if not self.image_paths:
+            return False
+
+        current_image_name = self.image_paths[self.current_image_index]
+        tags_file = os.path.join(
+            self.current_directory,
+            f"{os.path.splitext(current_image_name)[0]}.txt"
+        )
+        with open(tags_file, 'r') as f:
+            tags = f.read()
+            if self.tag_edit.toPlainText() != tags:
+                return True
+
+        description_file = os.path.join(
+            self.current_directory,
+            f"{os.path.splitext(current_image_name)[0]}.caption"
+        )
+        with open(description_file, 'r') as f:
+            description = f.read()
+            return self.description_edit.toPlainText() != description
+
+    def prompt_for_save_if_dirty(self):
+        "Returns True if the user wants to cancel an action"
+        if not self.is_dirty():
+            return False
+        reply = QMessageBox.question(
+            self,
+            "Save",
+            "You have unsaved edits, would you like to save them?",
+            QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+            QMessageBox.Cancel  # Default
+        )
+        if reply == QMessageBox.Cancel:
+            return True
+        if reply == QMessageBox.Yes:
+            self.save_tags_and_description()
+        return False
+
+
     def save_tags_and_description(self):
         if not self.image_paths:
             return
@@ -202,32 +245,33 @@ class ImageTagManager(QMainWindow):
             self.current_directory,
             f"{os.path.splitext(current_image_name)[0]}.caption"
         )
-
         # Save tags
         with open(tags_file, 'w') as f:
-            f.write(self.tag_edit.text())
-
+            f.write(self.tag_edit.toPlainText())
         # Save description
         with open(description_file, 'w') as f:
-            f.write(self.description_edit.text())
-
-        #QMessageBox.information(
-        #    self,
-        #    "Success",
-        #    "Tags and description saved successfully!"
-        #)
+            f.write(self.description_edit.toPlainText())
 
     def on_tree_view_clicked(self, index: QModelIndex):
+        cancel = self.prompt_for_save_if_dirty()
+        if cancel:
+            return
         self.current_directory = self.model.filePath(index)
         if not os.path.isdir(self.current_directory):
             self.current_directory = os.path.dirname(self.current_directory)
         self.load_images_in_directory()
 
     def next_image(self):
+        cancel = self.prompt_for_save_if_dirty()
+        if cancel:
+            return
         if self.current_image_index < len(self.image_paths) - 1:
             self.load_image(self.current_image_index + 1)
 
     def prev_image(self):
+        cancel = self.prompt_for_save_if_dirty()
+        if cancel:
+            return
         if self.current_image_index > 0:
             self.load_image(self.current_image_index - 1)
 
@@ -236,6 +280,10 @@ class ImageTagManager(QMainWindow):
             self.next_image()
         elif event.key() == Qt.Key_Left:
             self.prev_image()
+        elif event.key == Qt.Key_S and (
+                event.modifiers() == Qt.ControlModifier
+        ):
+            self.save_tags_and_description
 
     # TODO: This needs to be pushed down into the image nav widget.
     # Currently resizing panels won't trigger image resizing.

@@ -64,9 +64,11 @@ class TagAreaWidget(QWidget):
             # Add to the scroll layout
             tag_container = QWidget()
             tag_container.setLayout(tag_layout)
-            tag_container.setStyleSheet(
-                "background-color: gray; color: black; border-radius: 10px;"
-            )
+            tag_container.setStyleSheet("""
+                background-color: gray;
+                color:            black;
+                border-radius:    10px;
+            """)
             self.scroll_layout.addWidget(tag_container)
 
     def add_tag(self, tag):
