@@ -15,7 +15,7 @@ class TagListModel(QAbstractListModel):
     def rowCount(self, parent=None) -> int:
         return len(self.all_tags_list)
 
-    def data(self, index, role=None) -> tuple[str, int] | str:
+    def data(self, index, role=None) -> str | Q:
         tag = self.all_tags_list[index.row()]
         if role == Qt.ItemDataRole.UserRole:
             return tag
@@ -63,11 +63,3 @@ class TagListModel(QAbstractListModel):
             self.tags_renaming_requested.emit(old_tags, new_tag)
             return True
         return False
-
-    @Slot()
-    def count_tags(self, images: list[Image]):
-        self.tag_counter.clear()
-        for image in images:
-            self.tag_counter.update(image.tags)
-        self.most_common_tags = self.tag_counter.most_common()
-        self.modelReset.emit()
