@@ -21,11 +21,27 @@ from PySide6.QtGui import QKeyEvent, QImageReader, QPixmap
 from PySide6.QtCore import Qt, QModelIndex, QSize, QMargins, QRect, QPoint
 from tag_area_widget import TagAreaWidget
 
+class MainImageLabel(QLabel):
+    def __init__(self, manager, parent=None):
+        super().__init__(parent)
+        self.manager = manager
+        self.setAlignment(Qt.AlignCenter)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding,
+                           QSizePolicy.Policy.Expanding)
+        self.setMinimumSize(QSize(100, 100))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not self.manager.image_paths:
+            return
+        self.manager.load_image(self.manager.current_image_index)
+
+
 class ImageTagManager(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Image Tag Manager")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1500, 1000)
 
         self.current_image_index = 0
         self.image_paths = []
@@ -62,9 +78,9 @@ class ImageTagManager(QMainWindow):
         self.main_layout.addWidget(self.horizontal_split)
         # Add tree navigator then the center panel
         self.horizontal_split.addWidget(self.tree_view)
-        self.horizontal_split.setStretchFactor(0, 3)
+        self.horizontal_split.setStretchFactor(0, 1.5)
         self.horizontal_split.addWidget(self.center_widget)
-        self.horizontal_split.setStretchFactor(1, 7)
+        self.horizontal_split.setStretchFactor(1, 8.5)
 
         # Add split between tag editors and image navigation
         self.vertical_split = QSplitter(Qt.Vertical)
@@ -72,7 +88,6 @@ class ImageTagManager(QMainWindow):
 
         # Add image viewer
         self.vertical_split.addWidget(self.image_nav_widget)
-        self.vertical_split.setStretchFactor(0, 7)
         self.image_nav_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
                                             QSizePolicy.Policy.Expanding)
         self.image_left_button = QPushButton("<", self)
@@ -83,11 +98,7 @@ class ImageTagManager(QMainWindow):
         self.image_right_button.clicked.connect(self.next_image)
         self.image_right_button.setSizePolicy(QSizePolicy.Minimum,
                                               QSizePolicy.Minimum)
-        self.image_label = QLabel(self)
-        self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding,
-                                       QSizePolicy.Policy.Expanding)
-        self.image_label.setMinimumSize(QSize(100, 100))
+        self.image_label = MainImageLabel(self)
         self.image_nav_layout.addWidget(self.image_left_button)
         self.image_nav_layout.addWidget(self.image_label)
         self.image_nav_layout.addWidget(self.image_right_button)
@@ -96,18 +107,13 @@ class ImageTagManager(QMainWindow):
         self.editors_widget = QWidget(self)
         self.editors_layout = QVBoxLayout(self.editors_widget)
         self.vertical_split.addWidget(self.editors_widget)
+        self.vertical_split.setStretchFactor(0, 8)
+        self.vertical_split.setStretchFactor(1, 2)
 
-        # Tag editor
+        # Tag viewer
         self.tag_edit_label = QLabel(self)
         self.tag_edit_label.setText("Tags")
         self.editors_layout.addWidget(self.tag_edit_label)
-        self.tag_edit = QTextEdit(self)
-        self.tag_edit.setPlaceholderText("Tags (comma separated)")
-        self.tag_edit.setSizePolicy(QSizePolicy.Expanding,
-                                    QSizePolicy.Expanding)
-        self.editors_layout.addWidget(self.tag_edit)
-
-        # Tag viewer
         self.tag_viewer = TagAreaWidget()
         self.editors_layout.addWidget(self.tag_viewer)
 
@@ -183,9 +189,7 @@ class ImageTagManager(QMainWindow):
         if os.path.exists(tags_file):
             with open(tags_file, 'r') as f:
                 tags = f.read()
-                self.tag_edit.setText(tags)
-                self.tag_viewer.tags = [s for s in tags.split(", ") if s]
-                self.tag_viewer.update_tags()
+                self.tag_viewer.setText(tags)
 
         # Load description
         if os.path.exists(description_file):
@@ -203,8 +207,8 @@ class ImageTagManager(QMainWindow):
             f"{os.path.splitext(current_image_name)[0]}.txt"
         )
         with open(tags_file, 'r') as f:
-            tags = f.read()
-            if self.tag_edit.toPlainText() != tags:
+            tags = f.read().strip()
+            if self.tag_viewer.toPlainText() != tags:
                 return True
 
         description_file = os.path.join(
@@ -212,8 +216,8 @@ class ImageTagManager(QMainWindow):
             f"{os.path.splitext(current_image_name)[0]}.caption"
         )
         with open(description_file, 'r') as f:
-            description = f.read()
-            return self.description_edit.toPlainText() != description
+            description = f.read().strip()
+            return self.description_edit.toPlainText().strip() != description
 
     def prompt_for_save_if_dirty(self):
         "Returns True if the user wants to cancel an action"
@@ -247,7 +251,7 @@ class ImageTagManager(QMainWindow):
         )
         # Save tags
         with open(tags_file, 'w') as f:
-            f.write(self.tag_edit.toPlainText())
+            f.write(self.tag_viewer.toPlainText())
         # Save description
         with open(description_file, 'w') as f:
             f.write(self.description_edit.toPlainText())
@@ -284,14 +288,6 @@ class ImageTagManager(QMainWindow):
                 event.modifiers() == Qt.ControlModifier
         ):
             self.save_tags_and_description
-
-    # TODO: This needs to be pushed down into the image nav widget.
-    # Currently resizing panels won't trigger image resizing.
-    def resizeEvent(self, event):
-        # Resize the image widget
-        if not self.image_paths:
-            return
-        self.load_image(self.current_image_index)
 
 
 if __name__ == "__main__":

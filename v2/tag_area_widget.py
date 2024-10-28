@@ -6,10 +6,20 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QWidget,
     QLabel,
-    QPushButton
+    QPushButton,
+    QTextEdit
 )
 
 from flow_layout import FlowLayout
+
+def deduplicate_list(input_list):
+    seen = set()  # Create a set to keep track of seen elements
+    deduplicated_list = []  # List to hold deduplicated elements
+    for item in input_list:
+        if item not in seen:  # Check if the item is already seen
+            seen.add(item)  # Add the item to the seen set
+            deduplicated_list.append(item)  # Append it to the result list
+    return deduplicated_list
 
 class TagAreaWidget(QWidget):
     def __init__(self, tags=[]):
@@ -27,6 +37,16 @@ class TagAreaWidget(QWidget):
         self.scroll_layout = FlowLayout(self.scroll_widget)
         self.scroll_area.setWidget(self.scroll_widget)
         self.main_layout.addWidget(self.scroll_area)
+
+        # Text edit for editing tags as text
+        self.text_edit = QTextEdit()
+        self.text_edit.setVisible(False) # Initially hidden
+        self.main_layout.addWidget(self.text_edit)
+
+        # Mode toggle button
+        self.edit_button = QPushButton("Edit")
+        self.edit_button.clicked.connect(self.toggle_edit_mode)
+        self.main_layout.addWidget(self.edit_button)
 
     def update_tags(self):
         # Clear existing tags
@@ -81,6 +101,41 @@ class TagAreaWidget(QWidget):
             self.tags.remove(tag)
             self.update_tags()
 
+    def toggle_edit_mode(self):
+        if self.text_edit.isVisible():
+            # Save changes and switch back to tag view
+            new_tags = self.text_edit.toPlainText().split(', ')
+            new_tags = [tag.strip() for tag in new_tags if tag.strip()]
+            self.tags = deduplicate_list(new_tags)
+            self.update_tags()
+            self.text_edit.setVisible(False)
+            self.scroll_area.setVisible(True)
+            self.edit_button.setText("Edit")
+        else:
+            # Switch to text edit mode
+            tag_string = ', '.join(self.tags)
+            self.text_edit.setPlainText(tag_string)
+            self.text_edit.setVisible(True)
+            self.scroll_area.setVisible(False)
+            self.edit_button.setText("Done")
+
+    def toPlainText(self):
+        if self.text_edit.isVisible():
+            return self.text_edit.toPlainText()
+        else:
+            return ', '.join(self.tags)
+
+    def setTags(self, tags):
+        self.tags = tags
+        self.update_tags()
+        self.text_edit.setPlainText(', '.join(self.tags))
+
+    def setText(self, tag_string):
+        new_tags = tag_string.split(', ')
+        new_tags = [tag.strip() for tag in new_tags if tag.strip()]
+        self.tags = deduplicate_list(new_tags)
+        self.update_tags()
+        self.text_edit.setPlainText(tag_string)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
