@@ -15,7 +15,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QSizePolicy,
     QSplitter,
-    QScrollArea
+    QScrollArea,
+    QInputDialog
 )
 from PySide6.QtGui import QKeyEvent, QImageReader, QPixmap
 from PySide6.QtCore import Qt, QModelIndex, QSize, QMargins, QRect, QPoint
@@ -35,6 +36,87 @@ class MainImageLabel(QLabel):
         if not self.manager.image_paths:
             return
         self.manager.load_image(self.manager.current_image_index)
+
+
+class IndexLabel(QLabel):
+    # TODO: use this instead of passing in `manager'
+    #indexChanged = Signal(int)
+
+    def __init__(self, manager, parent=None):
+        super().__init__(parent)
+        self.manager = manager
+        self.update_text()
+
+    def index(self):
+        if not self.manager.image_paths:
+            return None
+        return self.manager.current_image_index
+
+    def count(self):
+        if not self.manager.image_paths:
+            return 0
+        return len(self.manager.image_paths)
+
+    def update_text(self):
+        if self.index() == None:
+            self.setText("")
+        else:
+            self.setText(f"{self.index()}/{self.count()}")
+
+    def mousePressEvent(self, event):
+        if ( self.index() != None ) and ( event.button() == Qt.LeftButton ):
+            self.prompt_for_index()
+
+    def prompt_for_index(self):
+        # Open an input dialog to get a new index from the user
+        new_index, ok = QInputDialog.getInt(
+            self,
+            "Jump to Index",
+            f"Enter a number between 0 and {self.count() - 1}",
+            value=self.index(),
+            minValue=0,
+            maxValue=self.count() - 1
+        )
+        if ok and ( 0 <= new_index < self.count() ):
+            self.manager.load_image(new_index)
+            self.update_text()
+            # TODO: User this instead of using `manager'
+            #self.indexChanged.emit(self.current_index)  # Emit the new index
+
+
+class ImageNavigationWidget(QWidget):
+    def __init__(self, manager, parent=None):
+        super().__init__(parent)
+        self.manager = manager
+        self.vertical_layout = QVBoxLayout(self)
+        self.image_title = QLabel(self)
+        self.image_title.setAlignment(Qt.AlignCenter)
+        self.image_index = IndexLabel(manager, self)
+        self.image_index.setAlignment(Qt.AlignRight)
+
+        self.vertical_layout.addWidget(self.image_title)
+        self.vertical_layout.addWidget(self.image_index)
+
+        self.image_nav_widget = QWidget(self)
+        self.image_nav_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
+                                            QSizePolicy.Policy.Expanding)
+        self.image_nav_layout = QHBoxLayout(self.image_nav_widget)
+        self.vertical_layout.addWidget(self.image_nav_widget)
+
+        self.image_left_button = QPushButton("<", self)
+        self.image_left_button.clicked.connect(manager.prev_image)
+        self.image_left_button.setSizePolicy(QSizePolicy.Minimum,
+                                             QSizePolicy.Minimum)
+
+        self.image_right_button = QPushButton(">", self)
+        self.image_right_button.clicked.connect(manager.next_image)
+        self.image_right_button.setSizePolicy(QSizePolicy.Minimum,
+                                              QSizePolicy.Minimum)
+
+        self.image_label = MainImageLabel(self.manager, self)
+        self.image_nav_layout.addWidget(self.image_left_button)
+        self.image_nav_layout.addWidget(self.image_label)
+        self.image_nav_layout.addWidget(self.image_right_button)
 
 
 class ImageTagManager(QMainWindow):
@@ -57,8 +139,6 @@ class ImageTagManager(QMainWindow):
         self.main_layout = QHBoxLayout(self.central_widget)
         self.center_widget = QWidget(self.central_widget)
         self.center_layout = QVBoxLayout(self.center_widget)
-        self.image_nav_widget = QWidget(self.center_widget)
-        self.image_nav_layout = QHBoxLayout(self.image_nav_widget)
 
         # Directory tree view
         self.tree_view = QTreeView(self)
@@ -87,28 +167,15 @@ class ImageTagManager(QMainWindow):
         self.center_layout.addWidget(self.vertical_split)
 
         # Add image viewer
-        self.vertical_split.addWidget(self.image_nav_widget)
-        self.image_nav_widget.setSizePolicy(QSizePolicy.Policy.Expanding,
-                                            QSizePolicy.Policy.Expanding)
-        self.image_left_button = QPushButton("<", self)
-        self.image_left_button.clicked.connect(self.prev_image)
-        self.image_left_button.setSizePolicy(QSizePolicy.Minimum,
-                                             QSizePolicy.Minimum)
-        self.image_right_button = QPushButton(">", self)
-        self.image_right_button.clicked.connect(self.next_image)
-        self.image_right_button.setSizePolicy(QSizePolicy.Minimum,
-                                              QSizePolicy.Minimum)
-        self.image_label = MainImageLabel(self)
-        self.image_nav_layout.addWidget(self.image_left_button)
-        self.image_nav_layout.addWidget(self.image_label)
-        self.image_nav_layout.addWidget(self.image_right_button)
+        self.image_nav = ImageNavigationWidget(self, self)
+        self.vertical_split.addWidget(self.image_nav)
 
         # Editors panel
         self.editors_widget = QWidget(self)
         self.editors_layout = QVBoxLayout(self.editors_widget)
         self.vertical_split.addWidget(self.editors_widget)
-        self.vertical_split.setStretchFactor(0, 8)
-        self.vertical_split.setStretchFactor(1, 2)
+        self.vertical_split.setStretchFactor(0, 8)  # Image
+        self.vertical_split.setStretchFactor(1, 2)  # Editors
 
         # Tag viewer
         self.tag_edit_label = QLabel(self)
@@ -116,7 +183,6 @@ class ImageTagManager(QMainWindow):
         self.editors_layout.addWidget(self.tag_edit_label)
         self.tag_viewer = TagAreaWidget()
         self.editors_layout.addWidget(self.tag_viewer)
-
 
         # Description editor
         self.description_edit_label = QLabel(self)
@@ -164,11 +230,11 @@ class ImageTagManager(QMainWindow):
             pixmap = QPixmap.fromImageReader(image_reader)
             pixmap.setDevicePixelRatio(self.devicePixelRatio())
             pixmap = pixmap.scaled(
-                self.image_label.size() * pixmap.devicePixelRatio(),
+                self.image_nav.image_label.size() * pixmap.devicePixelRatio(),
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
-            self.image_label.setPixmap(pixmap)
+            self.image_nav.image_label.setPixmap(pixmap)
             self.current_image_index = index
             self.load_tags_and_description()
 
@@ -197,6 +263,10 @@ class ImageTagManager(QMainWindow):
                 description = f.read()
                 self.description_edit.setText(description)
 
+        # Set image title and index
+        self.image_nav.image_title.setText(current_image_name)
+        self.image_nav.image_index.update_text()
+
     def is_dirty(self):
         if not self.image_paths:
             return False
@@ -208,7 +278,7 @@ class ImageTagManager(QMainWindow):
         )
         with open(tags_file, 'r') as f:
             tags = f.read().strip()
-            if self.tag_viewer.toPlainText() != tags:
+            if self.tag_viewer.toPlainText().strip() != tags:
                 return True
 
         description_file = os.path.join(
