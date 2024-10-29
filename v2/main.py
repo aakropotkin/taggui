@@ -19,7 +19,15 @@ from PySide6.QtWidgets import (
     QInputDialog
 )
 from PySide6.QtGui import QKeyEvent, QImageReader, QPixmap
-from PySide6.QtCore import Qt, QModelIndex, QSize, QMargins, QRect, QPoint
+from PySide6.QtCore import (
+    Qt,
+    QModelIndex,
+    QSize,
+    QMargins,
+    QRect,
+    QPoint,
+    QEvent
+)
 from tag_area_widget import TagAreaWidget
 
 class MainImageLabel(QLabel):
@@ -42,32 +50,32 @@ class IndexLabel(QLabel):
     # TODO: use this instead of passing in `manager'
     #indexChanged = Signal(int)
 
-    def __init__(self, manager, parent=None):
+    def __init__(self, manager, parent=None) -> None:
         super().__init__(parent)
         self.manager = manager
         self.update_text()
 
-    def index(self):
+    def index(self) -> int:
         if not self.manager.image_paths:
             return None
         return self.manager.current_image_index
 
-    def count(self):
+    def count(self) -> int:
         if not self.manager.image_paths:
             return 0
         return len(self.manager.image_paths)
 
-    def update_text(self):
+    def update_text(self) -> None:
         if self.index() == None:
             self.setText("")
         else:
             self.setText(f"{self.index()}/{self.count()}")
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QEvent) -> None:
         if ( self.index() != None ) and ( event.button() == Qt.LeftButton ):
             self.prompt_for_index()
 
-    def prompt_for_index(self):
+    def prompt_for_index(self) -> None:
         # Open an input dialog to get a new index from the user
         new_index, ok = QInputDialog.getInt(
             self,
@@ -85,7 +93,7 @@ class IndexLabel(QLabel):
 
 
 class ImageNavigationWidget(QWidget):
-    def __init__(self, manager, parent=None):
+    def __init__(self, manager, parent=None) -> None:
         super().__init__(parent)
         self.manager = manager
         self.vertical_layout = QVBoxLayout(self)
@@ -254,13 +262,13 @@ class ImageTagManager(QMainWindow):
         # Load tags
         if os.path.exists(tags_file):
             with open(tags_file, 'r') as f:
-                tags = f.read()
+                tags = f.replace("\n", " ").read().strip()
                 self.tag_viewer.setText(tags)
 
         # Load description
         if os.path.exists(description_file):
             with open(description_file, 'r') as f:
-                description = f.read()
+                description = f.read().replace("\n", " ").strip()
                 self.description_edit.setText(description)
 
         # Set image title and index
@@ -276,18 +284,30 @@ class ImageTagManager(QMainWindow):
             self.current_directory,
             f"{os.path.splitext(current_image_name)[0]}.txt"
         )
-        with open(tags_file, 'r') as f:
-            tags = f.read().strip()
-            if self.tag_viewer.toPlainText().strip() != tags:
-                return True
+        if os.path.exists(tags_file):
+            with open(tags_file, 'r') as f:
+                tags = f.read().strip()
+                have_tags = self.tag_viewer.toPlainText().replace("\n", " ")
+                have_tags = have_tags.strip()
+                if tags != have_tags:
+                    return True
+        elif self.tag_viewer.toPlainText().replace("\n", " ").strip() != "":
+            return True
 
         description_file = os.path.join(
             self.current_directory,
             f"{os.path.splitext(current_image_name)[0]}.caption"
         )
-        with open(description_file, 'r') as f:
-            description = f.read().strip()
-            return self.description_edit.toPlainText().strip() != description
+        if os.path.exists(description_file):
+            with open(description_file, 'r') as f:
+                description = f.read().strip()
+                have_description = self.description_edit.toPlainText()
+                have_description = have_description.replace("\n", " ").strip()
+                return have_description != description
+        else:
+            have_description = self.description_edit.toPlainText()
+            have_description = have_description.replace("\n", " ").strip()
+            return have_description != ""
 
     def prompt_for_save_if_dirty(self):
         "Returns True if the user wants to cancel an action"
