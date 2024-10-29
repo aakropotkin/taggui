@@ -31,7 +31,7 @@ from PySide6.QtCore import (
 from tag_area_widget import TagAreaWidget
 
 class MainImageLabel(QLabel):
-    def __init__(self, manager, parent=None):
+    def __init__(self, manager: QWidget, parent=None) -> None:
         super().__init__(parent)
         self.manager = manager
         self.setAlignment(Qt.AlignCenter)
@@ -39,7 +39,7 @@ class MainImageLabel(QLabel):
                            QSizePolicy.Policy.Expanding)
         self.setMinimumSize(QSize(100, 100))
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         if not self.manager.image_paths:
             return
@@ -50,7 +50,7 @@ class IndexLabel(QLabel):
     # TODO: use this instead of passing in `manager'
     #indexChanged = Signal(int)
 
-    def __init__(self, manager, parent=None) -> None:
+    def __init__(self, manager: QWidget, parent=None) -> None:
         super().__init__(parent)
         self.manager = manager
         self.update_text()
@@ -58,7 +58,7 @@ class IndexLabel(QLabel):
     def index(self) -> int:
         if not self.manager.image_paths:
             return None
-        return self.manager.current_image_index
+        return self.manager.current_image_index + 1
 
     def count(self) -> int:
         if not self.manager.image_paths:
@@ -80,13 +80,13 @@ class IndexLabel(QLabel):
         new_index, ok = QInputDialog.getInt(
             self,
             "Jump to Index",
-            f"Enter a number between 0 and {self.count() - 1}",
+            f"Enter a number between 1 and {self.count()}",
             value=self.index(),
-            minValue=0,
-            maxValue=self.count() - 1
+            minValue=1,
+            maxValue=self.count()
         )
-        if ok and ( 0 <= new_index < self.count() ):
-            self.manager.load_image(new_index)
+        if ok and ( 0 < new_index <= self.count() ):
+            self.manager.load_image(new_index - 1)
             self.update_text()
             # TODO: User this instead of using `manager'
             #self.indexChanged.emit(self.current_index)  # Emit the new index
@@ -128,7 +128,7 @@ class ImageNavigationWidget(QWidget):
 
 
 class ImageTagManager(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Image Tag Manager")
         self.setGeometry(100, 100, 1500, 1000)
@@ -155,7 +155,9 @@ class ImageTagManager(QMainWindow):
         self.tree_view.setModel(self.model)
         # Start from home directory
         self.tree_view.setRootIndex(self.model.index(os.path.expanduser("~")))
-        self.tree_view.clicked.connect(self.on_tree_view_clicked)
+        self.tree_view.selectionModel().currentChanged.connect(
+            self.on_tree_view_changed
+        )
         self.tree_view.hideColumn(1)  # Hide size
         self.tree_view.hideColumn(2)  # Hide type
         self.tree_view.hideColumn(3)  # Hide date modified
@@ -211,7 +213,7 @@ class ImageTagManager(QMainWindow):
 
         self.load_images_in_directory()
 
-    def load_images_in_directory(self):
+    def load_images_in_directory(self) -> None:
         cancel = self.prompt_for_save_if_dirty()
         if cancel:
             return
@@ -228,7 +230,7 @@ class ImageTagManager(QMainWindow):
             if self.image_paths:
                 self.load_image(0)
 
-    def load_image(self, index):
+    def load_image(self, index: int) -> None:
         if self.image_paths:
             image_path = os.path.join(
                 self.current_directory, self.image_paths[index]
@@ -246,7 +248,7 @@ class ImageTagManager(QMainWindow):
             self.current_image_index = index
             self.load_tags_and_description()
 
-    def load_tags_and_description(self):
+    def load_tags_and_description(self) -> None:
         if not self.image_paths:
             return
         current_image_name = self.image_paths[self.current_image_index]
@@ -262,7 +264,7 @@ class ImageTagManager(QMainWindow):
         # Load tags
         if os.path.exists(tags_file):
             with open(tags_file, 'r') as f:
-                tags = f.replace("\n", " ").read().strip()
+                tags = f.read().replace("\n", " ").strip()
                 self.tag_viewer.setText(tags)
 
         # Load description
@@ -275,7 +277,7 @@ class ImageTagManager(QMainWindow):
         self.image_nav.image_title.setText(current_image_name)
         self.image_nav.image_index.update_text()
 
-    def is_dirty(self):
+    def is_dirty(self) -> bool:
         if not self.image_paths:
             return False
 
@@ -309,7 +311,7 @@ class ImageTagManager(QMainWindow):
             have_description = have_description.replace("\n", " ").strip()
             return have_description != ""
 
-    def prompt_for_save_if_dirty(self):
+    def prompt_for_save_if_dirty(self) -> bool:
         "Returns True if the user wants to cancel an action"
         if not self.is_dirty():
             return False
@@ -326,8 +328,7 @@ class ImageTagManager(QMainWindow):
             self.save_tags_and_description()
         return False
 
-
-    def save_tags_and_description(self):
+    def save_tags_and_description(self) -> None:
         if not self.image_paths:
             return
         current_image_name = self.image_paths[self.current_image_index]
@@ -346,30 +347,47 @@ class ImageTagManager(QMainWindow):
         with open(description_file, 'w') as f:
             f.write(self.description_edit.toPlainText())
 
-    def on_tree_view_clicked(self, index: QModelIndex):
+    def on_tree_view_changed(
+            self,
+            prev: QModelIndex,
+            index: QModelIndex
+    ) -> None:
         cancel = self.prompt_for_save_if_dirty()
         if cancel:
             return
-        self.current_directory = self.model.filePath(index)
-        if not os.path.isdir(self.current_directory):
-            self.current_directory = os.path.dirname(self.current_directory)
-        self.load_images_in_directory()
+        f = self.model.filePath(index)
+        if os.path.isdir(f):
+            self.current_directory = f
+            self.load_images_in_directory()
+        else:
+            if str(f).lower().endswith(
+                    ('.png', '.jpg', '.jpeg', '.gif', '.bmp')
+            ):
+                self.current_directory = os.path.dirname(f)
+                self.load_images_in_directory()
+                # Set index accordingly
+                idx = 0
+                for img in self.image_paths:
+                    if os.path.basename(img) == os.path.basename(f):
+                        self.load_image(idx)
+                        break
+                    idx = idx + 1
 
-    def next_image(self):
+    def next_image(self) -> None:
         cancel = self.prompt_for_save_if_dirty()
         if cancel:
             return
         if self.current_image_index < len(self.image_paths) - 1:
             self.load_image(self.current_image_index + 1)
 
-    def prev_image(self):
+    def prev_image(self) -> None:
         cancel = self.prompt_for_save_if_dirty()
         if cancel:
             return
         if self.current_image_index > 0:
             self.load_image(self.current_image_index - 1)
 
-    def keyPressEvent(self, event: QKeyEvent):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key_Right:
             self.next_image()
         elif event.key() == Qt.Key_Left:
