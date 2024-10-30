@@ -15,7 +15,7 @@ from flow_layout import FlowLayout
 from util import deduplicate_list
 
 class TagAreaWidget(QWidget):
-    def __init__(self, tags=[]) -> None:
+    def __init__(self, tags: list[str] = []) -> None:
         super().__init__()
         self.tags = tags
 
@@ -86,7 +86,7 @@ class TagAreaWidget(QWidget):
 
     def add_tag(self, tag) -> None:
         if not tag in self.tags:
-            self.tags.add(tag)
+            self.tags.append(tag)
             self.update_tags()
 
     def remove_tag(self, tag) -> None:

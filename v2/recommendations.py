@@ -16,10 +16,11 @@ from flow_layout import FlowLayout
 from tagger.tagger import Tagger
 
 class TagRecommendationsWidget(QWidget):
-    def __init__(self, parent=None) -> None:
+    def __init__(self, manager: QWidget, parent=None) -> None:
         super().__init__(parent)
         self.tagger = Tagger()
         self.tags = []
+        self.manager = manager
 
         self.main_layout = QVBoxLayout(self)
         self.setLayout(self.main_layout)
@@ -34,7 +35,10 @@ class TagRecommendationsWidget(QWidget):
     def set_image(self, path: str|Path) -> None:
         if not isinstance(path, Path):
             path = Path(path)
-        self.tags = self.tagger.tag_image(path).keys()
+        self.tags = set(self.tagger.tag_image(
+            path,
+            exclude_tags=self.manager.tag_viewer.tags
+        ).keys())
         self.update_tags()
 
     def update_tags(self) -> None:
@@ -55,7 +59,7 @@ class TagRecommendationsWidget(QWidget):
             # "+" button to add tag
             add_button = QPushButton("+")
             add_button.setFixedSize(20, 20)
-            add_button.clicked.connect(lambda _, t=tag: self.remove_tag(t))
+            add_button.clicked.connect(lambda _, t=tag: self.move_tag(t))
             # TODO: You need to signal the manager
             add_button.setStyleSheet("""
               QPushButton {
@@ -85,3 +89,7 @@ class TagRecommendationsWidget(QWidget):
         if tag in self.tags:
             self.tags.remove(tag)
             self.update_tags()
+
+    def move_tag(self, tag) -> None:
+        self.remove_tag(tag)
+        self.manager.tag_viewer.add_tag(tag)

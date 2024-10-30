@@ -211,7 +211,7 @@ class ImageTagManager(QMainWindow):
         self.editors_layout.addWidget(self.save_button)
 
         # Tag Recommendations
-        self.recommendations = TagRecommendationsWidget(self)
+        self.recommendations = TagRecommendationsWidget(self, self)
         self.recommendations.setMinimumSize(QSize(300, 50))
         self.horizontal_split.addWidget(self.recommendations)
 
