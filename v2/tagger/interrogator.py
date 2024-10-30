@@ -15,7 +15,7 @@ from numpy import asarray, float32, expand_dims, exp
 
 tag_escape_pattern = re.compile(r'([\\()])')
 
-import dbimutils as dbimutils
+import tagger.dbimutils as dbimutils
 
 
 class Interrogator:

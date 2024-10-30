@@ -1,11 +1,11 @@
 import sys
 import json
 from typing import Generator, Iterable
-from interrogator import Interrogator
+from tagger.interrogator import Interrogator
 from PIL import Image
 from pathlib import Path
 
-from interrogators import interrogators
+from tagger.interrogators import interrogators
 
 def escape_tag(tag: str) -> str:
     return tag.replace(' ', '_').replace('\(', '(').replace('\)', ')')

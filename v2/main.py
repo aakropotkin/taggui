@@ -29,6 +29,7 @@ from PySide6.QtCore import (
     QEvent
 )
 from tag_area_widget import TagAreaWidget
+from recommendations import TagRecommendationsWidget
 
 class MainImageLabel(QLabel):
     def __init__(self, manager: QWidget, parent=None) -> None:
@@ -131,7 +132,7 @@ class ImageTagManager(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Image Tag Manager")
-        self.setGeometry(100, 100, 1500, 1000)
+        self.setGeometry(100, 100, 1800, 1000)
 
         self.current_image_index = 0
         self.image_paths = []
@@ -168,9 +169,7 @@ class ImageTagManager(QMainWindow):
         self.main_layout.addWidget(self.horizontal_split)
         # Add tree navigator then the center panel
         self.horizontal_split.addWidget(self.tree_view)
-        self.horizontal_split.setStretchFactor(0, 1.5)
         self.horizontal_split.addWidget(self.center_widget)
-        self.horizontal_split.setStretchFactor(1, 8.5)
 
         # Add split between tag editors and image navigation
         self.vertical_split = QSplitter(Qt.Vertical)
@@ -184,7 +183,7 @@ class ImageTagManager(QMainWindow):
         self.editors_widget = QWidget(self)
         self.editors_layout = QVBoxLayout(self.editors_widget)
         self.vertical_split.addWidget(self.editors_widget)
-        self.vertical_split.setStretchFactor(0, 8)  # Image
+        self.vertical_split.setStretchFactor(0, 6)  # Image
         self.vertical_split.setStretchFactor(1, 2)  # Editors
 
         # Tag viewer
@@ -210,6 +209,16 @@ class ImageTagManager(QMainWindow):
         self.save_button = QPushButton("Save", self)
         self.save_button.clicked.connect(self.save_tags_and_description)
         self.editors_layout.addWidget(self.save_button)
+
+        # Tag Recommendations
+        self.recommendations = TagRecommendationsWidget(self)
+        self.recommendations.setMinimumSize(QSize(300, 50))
+        self.horizontal_split.addWidget(self.recommendations)
+
+        # Set Horizontal stretch
+        self.horizontal_split.setStretchFactor(0, 2)
+        self.horizontal_split.setStretchFactor(1, 6)
+        self.horizontal_split.setStretchFactor(2, 2)
 
         self.load_images_in_directory()
 
@@ -276,6 +285,11 @@ class ImageTagManager(QMainWindow):
         # Set image title and index
         self.image_nav.image_title.setText(current_image_name)
         self.image_nav.image_index.update_text()
+
+        # Load recommendations
+        self.recommendations.set_image(
+            os.path.join(self.current_directory, current_image_name)
+        )
 
     def is_dirty(self) -> bool:
         if not self.image_paths:
