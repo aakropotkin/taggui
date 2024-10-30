@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from tagger.interrogator import (
+from interrogator import (
     Interrogator,
     WaifuDiffusionInterrogator,
     MLDanbooruInterrogator
