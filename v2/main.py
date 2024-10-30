@@ -347,11 +347,7 @@ class ImageTagManager(QMainWindow):
         with open(description_file, 'w') as f:
             f.write(self.description_edit.toPlainText())
 
-    def on_tree_view_changed(
-            self,
-            prev: QModelIndex,
-            index: QModelIndex
-    ) -> None:
+    def on_tree_view_changed(self, index: QModelIndex) -> None:
         cancel = self.prompt_for_save_if_dirty()
         if cancel:
             return

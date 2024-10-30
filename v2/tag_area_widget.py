@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 from flow_layout import FlowLayout
 
-def deduplicate_list(input_list):
+def deduplicate_list(input_list) -> list[any]:
     seen = set()  # Create a set to keep track of seen elements
     deduplicated_list = []  # List to hold deduplicated elements
     for item in input_list:
@@ -22,7 +22,7 @@ def deduplicate_list(input_list):
     return deduplicated_list
 
 class TagAreaWidget(QWidget):
-    def __init__(self, tags=[]):
+    def __init__(self, tags=[]) -> None:
         super().__init__()
         self.tags = tags
 
@@ -48,7 +48,7 @@ class TagAreaWidget(QWidget):
         self.edit_button.clicked.connect(self.toggle_edit_mode)
         self.main_layout.addWidget(self.edit_button)
 
-    def update_tags(self):
+    def update_tags(self) -> None:
         # Clear existing tags
         for i in reversed(range(self.scroll_layout.count())):
             widget = self.scroll_layout.itemAt(i).widget()
@@ -91,17 +91,17 @@ class TagAreaWidget(QWidget):
             """)
             self.scroll_layout.addWidget(tag_container)
 
-    def add_tag(self, tag):
+    def add_tag(self, tag) -> None:
         if not tag in self.tags:
             self.tags.add(tag)
             self.update_tags()
 
-    def remove_tag(self, tag):
+    def remove_tag(self, tag) -> None:
         if tag in self.tags:
             self.tags.remove(tag)
             self.update_tags()
 
-    def toggle_edit_mode(self):
+    def toggle_edit_mode(self) -> None:
         if self.text_edit.isVisible():
             # Save changes and switch back to tag view
             new_tags = self.text_edit.toPlainText().split(', ')
@@ -119,36 +119,20 @@ class TagAreaWidget(QWidget):
             self.scroll_area.setVisible(False)
             self.edit_button.setText("Done")
 
-    def toPlainText(self):
+    def toPlainText(self) -> str:
         if self.text_edit.isVisible():
             return self.text_edit.toPlainText()
         else:
             return ', '.join(self.tags)
 
-    def setTags(self, tags):
+    def setTags(self, tags) -> None:
         self.tags = tags
         self.update_tags()
         self.text_edit.setPlainText(', '.join(self.tags))
 
-    def setText(self, tag_string):
+    def setText(self, tag_string) -> None:
         new_tags = tag_string.split(', ')
         new_tags = [tag.strip() for tag in new_tags if tag.strip()]
         self.tags = deduplicate_list(new_tags)
         self.update_tags()
         self.text_edit.setPlainText(tag_string)
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    # Get active screen
-    screen = app.primaryScreen()
-    window = TagAreaWidget()
-    window.tags = ["foo", "bar", "baz"]
-    window.update_tags()
-    # Move window to active screen
-    geom = screen.geometry()
-    x = geom.x() + geom.width() // 2 - window.width() // 2
-    y = geom.y() + geom.height() // 2 - window.height() // 2
-    window.move(x, y)
-
-    window.show()
-    sys.exit(app.exec())
