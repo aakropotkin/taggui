@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+from pathlib import Path
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -47,13 +48,29 @@ class MainImageLabel(QLabel):
         self.manager.load_image(self.manager.current_image_index)
 
 
-class IndexLabel(QLabel):
+class IndexLabel(QWidget):
     # TODO: use this instead of passing in `manager'
     #indexChanged = Signal(int)
 
     def __init__(self, manager: QWidget, parent=None) -> None:
         super().__init__(parent)
         self.manager = manager
+        self.layout = QHBoxLayout(self)
+        self.setLayout(self.layout)
+
+        self.label = QLabel(self)
+        self.layout.addWidget(self.label)
+
+        self.delete_button = QPushButton("Delete")
+        self.delete_button.setMaximumSize(100, 25)
+        self.delete_button.clicked.connect(self.delete_image)
+        self.layout.addWidget(self.delete_button)
+
+        self.jump_button = QPushButton("Jump To")
+        self.jump_button.setMaximumSize(100, 25)
+        self.jump_button.clicked.connect(self.prompt_for_index)
+        self.layout.addWidget(self.jump_button)
+
         self.update_text()
 
     def index(self) -> int:
@@ -68,15 +85,39 @@ class IndexLabel(QLabel):
 
     def update_text(self) -> None:
         if self.index() == None:
-            self.setText("")
+            self.label.setText("")
         else:
-            self.setText(f"{self.index()}/{self.count()}")
+            self.label.setText(f"{self.index()}/{self.count()}")
 
-    def mousePressEvent(self, event: QEvent) -> None:
-        if ( self.index() != None ) and ( event.button() == Qt.LeftButton ):
-            self.prompt_for_index()
+    def delete_image(self) -> None:
+        if self.index() == None:
+            return
+
+        current_image_name = self.manager.image_paths[
+            self.manager.current_image_index
+        ]
+        img_path = Path(self.manager.current_directory) / current_image_name
+        if img_path.is_file():
+            img_path.unlink()
+
+        base_path = os.path.join(
+            self.manager.current_directory,
+            os.path.splitext(current_image_name)[0]
+        )
+        tag_path = Path( base_path + ".txt" )
+        if tag_path.is_file():
+            tag_path.unlink()
+
+        caption_path = Path( base_path + ".caption" )
+        if caption_path.is_file():
+            caption_path.unlink()
+
+        del self.manager.image_paths[self.index()]
+        self.update_text()  # Refresh `count'
 
     def prompt_for_index(self) -> None:
+        if self.index() == None:
+            return
         # Open an input dialog to get a new index from the user
         new_index, ok = QInputDialog.getInt(
             self,
@@ -101,7 +142,7 @@ class ImageNavigationWidget(QWidget):
         self.image_title = QLabel(self)
         self.image_title.setAlignment(Qt.AlignCenter)
         self.image_index = IndexLabel(manager, self)
-        self.image_index.setAlignment(Qt.AlignRight)
+        #self.image_index.setAlignment(Qt.AlignRight)
 
         self.vertical_layout.addWidget(self.image_title)
         self.vertical_layout.addWidget(self.image_index)
@@ -359,7 +400,9 @@ class ImageTagManager(QMainWindow):
             f.write(self.tag_viewer.toPlainText())
         # Save description
         with open(description_file, 'w') as f:
-            f.write(self.description_edit.toPlainText())
+            f.write(
+                self.description_edit.toPlainText().replace('\n', ' ').strip()
+            )
 
     def on_tree_view_changed(self, index: QModelIndex) -> None:
         cancel = self.prompt_for_save_if_dirty()

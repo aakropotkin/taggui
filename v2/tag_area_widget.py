@@ -88,11 +88,18 @@ class TagAreaWidget(QWidget):
         if not tag in self.tags:
             self.tags.append(tag)
             self.update_tags()
+            if self.text_edit.toPlainText().strip() == "":
+                self.text_edit.setPlainText(tag)
+            else:
+                self.text_edit.setPlainText(
+                    self.text_edit.toPlainText() + ", " + tag
+                )
 
     def remove_tag(self, tag) -> None:
         if tag in self.tags:
             self.tags.remove(tag)
             self.update_tags()
+            self.text_edit.setPlainText(', '.join(self.tags))
 
     def toggle_edit_mode(self) -> None:
         if self.text_edit.isVisible():
@@ -119,7 +126,7 @@ class TagAreaWidget(QWidget):
             return ', '.join(self.tags)
 
     def setTags(self, tags) -> None:
-        self.tags = tags
+        self.tags = deduplicate_list(tags)
         self.update_tags()
         self.text_edit.setPlainText(', '.join(self.tags))
 
