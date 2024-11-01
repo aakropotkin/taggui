@@ -113,6 +113,7 @@ class IndexLabel(QWidget):
             caption_path.unlink()
 
         del self.manager.image_paths[self.index()]
+        self.manager.load_tags_and_description()
         self.update_text()  # Refresh `count'
 
     def prompt_for_index(self) -> None:
