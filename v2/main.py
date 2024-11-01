@@ -27,7 +27,9 @@ from PySide6.QtCore import (
     QMargins,
     QRect,
     QPoint,
-    QEvent
+    QEvent,
+    QDir,
+    QObject
 )
 from tag_area_widget import TagAreaWidget
 from recommendations import TagRecommendationsWidget
@@ -112,8 +114,8 @@ class IndexLabel(QWidget):
         if caption_path.is_file():
             caption_path.unlink()
 
-        del self.manager.image_paths[self.index()]
-        self.manager.load_tags_and_description()
+        del self.manager.image_paths[self.index() - 1]
+        self.manager.load_image(self.index() - 1)
         self.update_text()  # Refresh `count'
 
     def prompt_for_index(self) -> None:
@@ -170,6 +172,13 @@ class ImageNavigationWidget(QWidget):
         self.image_nav_layout.addWidget(self.image_right_button)
 
 
+class ImageFileSystemModel(QFileSystemModel):
+    def __init__(self, parent: QObject = None) -> None:
+        super().__init__(parent)
+        self.setNameFilters(["*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"])
+        self.setNameFilterDisables(False)  # Enable filtering
+
+
 class ImageTagManager(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -193,7 +202,8 @@ class ImageTagManager(QMainWindow):
 
         # Directory tree view
         self.tree_view = QTreeView(self)
-        self.model = QFileSystemModel()
+        self.tree_view.setSortingEnabled(False)
+        self.model = ImageFileSystemModel(self)
         self.model.setRootPath("")
         self.tree_view.setModel(self.model)
         # Start from home directory
