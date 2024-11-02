@@ -24,6 +24,8 @@ class TagRecommendationsWidget(QWidget):
 
         self.main_layout = QVBoxLayout(self)
         self.setLayout(self.main_layout)
+        self.label = QLabel("Recommended Tags")
+        self.main_layout.addWidget(self.label)
         # Scroll area to hold tags
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)

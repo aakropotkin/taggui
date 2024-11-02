@@ -32,7 +32,8 @@ from PySide6.QtCore import (
     QObject
 )
 from tag_area_widget import TagAreaWidget
-from recommendations import TagRecommendationsWidget
+from tag_recommendations import TagRecommendationsWidget
+from description_recommendations import DescriptionRecommendationWidget
 
 class MainImageLabel(QLabel):
     def __init__(self, manager: QWidget, parent=None) -> None:
@@ -263,8 +264,16 @@ class ImageTagManager(QMainWindow):
         self.editors_layout.addWidget(self.save_button)
 
         # Tag Recommendations
-        self.recommendations = TagRecommendationsWidget(self, self)
-        self.recommendations.setMinimumSize(QSize(300, 50))
+        self.recommendations = QWidget(self)
+        self.rec_layout = QVBoxLayout(self.recommendations)
+        self.rec_splitter = QSplitter(Qt.Vertical)
+        self.rec_layout.addWidget(self.rec_splitter)
+        self.tag_recommendations = TagRecommendationsWidget(self, self)
+        self.tag_recommendations.setMinimumSize(QSize(300, 50))
+        self.rec_splitter.addWidget(self.tag_recommendations)
+        self.desc_recommendations = DescriptionRecommendationWidget(self)
+        self.desc_recommendations.setMinimumSize(QSize(300, 50))
+        self.rec_splitter.addWidget(self.desc_recommendations)
         self.horizontal_split.addWidget(self.recommendations)
 
         # Set Horizontal stretch
@@ -339,7 +348,10 @@ class ImageTagManager(QMainWindow):
         self.image_nav.image_index.update_text()
 
         # Load recommendations
-        self.recommendations.set_image(
+        self.tag_recommendations.set_image(
+            os.path.join(self.current_directory, current_image_name)
+        )
+        self.desc_recommendations.set_image(
             os.path.join(self.current_directory, current_image_name)
         )
 
