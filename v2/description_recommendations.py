@@ -29,7 +29,11 @@ class Describer():
             image_path = Path(image_path)
         image = Image.open(image_path)
         inputs = self.processor(images=image, return_tensors="pt")
-        outputs = self.model.generate(**inputs, max_new_tokens=512)
+        outputs = self.model.generate(
+            **inputs,
+            min_length=32,
+            max_new_tokens=512
+        )
         caption = self.processor.decode(outputs[0], skip_special_tokens=True)
         return caption
 
