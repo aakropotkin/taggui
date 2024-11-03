@@ -1,5 +1,6 @@
 import sys
 
+from PySide6.QtCore import QObject
 from PySide6.QtWidgets import (
     QApplication,
     QVBoxLayout,
@@ -15,8 +16,8 @@ from flow_layout import FlowLayout
 from util import deduplicate_list
 
 class TagAreaWidget(QWidget):
-    def __init__(self, tags: list[str] = []) -> None:
-        super().__init__()
+    def __init__(self, tags: list[str] = [], parent: QObject = None) -> None:
+        super().__init__(parent)
         self.tags = tags
 
         # Main Layout
@@ -41,11 +42,14 @@ class TagAreaWidget(QWidget):
         self.edit_button.clicked.connect(self.toggle_edit_mode)
         self.main_layout.addWidget(self.edit_button)
 
+        self.update_tags()
+
     def update_tags(self) -> None:
+        """Refreshes tag display in tag view mode"""
         # Clear existing tags
         for i in reversed(range(self.scroll_layout.count())):
             widget = self.scroll_layout.itemAt(i).widget()
-            if widget is not None:
+            if widget:
                 widget.deleteLater()
 
         # Add tags with delete button
@@ -85,23 +89,22 @@ class TagAreaWidget(QWidget):
             self.scroll_layout.addWidget(tag_container)
 
     def add_tag(self, tag) -> None:
-        if not tag in self.tags:
+        """Adds a single tag if it doesn't already exist."""
+        tag = tag.strip()
+        if tag and tag not in self.tags:
             self.tags.append(tag)
             self.update_tags()
-            if self.text_edit.toPlainText().strip() == "":
-                self.text_edit.setPlainText(tag)
-            else:
-                self.text_edit.setPlainText(
-                    self.text_edit.toPlainText() + ", " + tag
-                )
+            self._update_text_edit()
 
     def remove_tag(self, tag) -> None:
+        """Removes a tag if it exists."""
         if tag in self.tags:
             self.tags.remove(tag)
             self.update_tags()
-            self.text_edit.setPlainText(', '.join(self.tags))
+            self._update_text_edit()
 
     def toggle_edit_mode(self) -> None:
+        """Toggles between tag display and text edit modes."""
         if self.text_edit.isVisible():
             # Save changes and switch back to tag view
             new_tags = self.text_edit.toPlainText().split(', ')
@@ -120,19 +123,22 @@ class TagAreaWidget(QWidget):
             self.edit_button.setText("Done")
 
     def toPlainText(self) -> str:
-        if self.text_edit.isVisible():
-            return self.text_edit.toPlainText()
-        else:
-            return ', '.join(self.tags)
+        """Return a comma-separated string of tags."""
+        return ', '.join(self.tags)
 
-    def setTags(self, tags) -> None:
+    def setTags(self, tags: list[str]) -> None:
+        """Set tags directly from a list."""
         self.tags = deduplicate_list(tags)
         self.update_tags()
-        self.text_edit.setPlainText(', '.join(self.tags))
+        self._update_text_edit()
 
-    def setText(self, tag_string) -> None:
-        new_tags = tag_string.split(', ')
-        new_tags = [tag.strip() for tag in new_tags if tag.strip()]
+    def setText(self, tag_string: str) -> None:
+        """Set tags from a comma-separated string, handling duplicates."""
+        new_tags = [tag.strip() for tag in tag_string.split(',') if tag.strip()]
         self.tags = deduplicate_list(new_tags)
         self.update_tags()
-        self.text_edit.setPlainText(tag_string)
+        self._update_text_edit()
+
+    def _update_text_edit(self) -> None:
+        """Update the text edit widget with the current tags."""
+        self.text_edit.setPlainText(', '.join(self.tags))
