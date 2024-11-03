@@ -48,7 +48,10 @@ class MainImageLabel(QLabel):
         super().resizeEvent(event)
         if not self.manager.image_paths:
             return
-        self.manager.load_image(self.manager.current_image_index)
+        self.manager.load_image(
+            self.manager.current_image_index,
+            image_only=True
+        )
 
 
 class IndexLabel(QWidget):
@@ -300,7 +303,7 @@ class ImageTagManager(QMainWindow):
             if self.image_paths:
                 self.load_image(0)
 
-    def load_image(self, index: int) -> None:
+    def load_image(self, index: int, image_only: bool = False) -> None:
         if self.image_paths:
             image_path = os.path.join(
                 self.current_directory, self.image_paths[index]
@@ -314,6 +317,8 @@ class ImageTagManager(QMainWindow):
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
+            if image_only:
+                return
             self.image_nav.image_label.setPixmap(pixmap)
             self.current_image_index = index
             self.load_tags_and_description()

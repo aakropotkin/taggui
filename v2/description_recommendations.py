@@ -4,6 +4,7 @@ from pathlib import Path
 from PIL import Image
 from transformers import BlipProcessor, BlipForConditionalGeneration
 
+from PySide6.QtCore import QThread, Signal, QObject
 from PySide6.QtWidgets import (
     QApplication,
     QVBoxLayout,
@@ -32,10 +33,23 @@ class Describer():
         outputs = self.model.generate(
             **inputs,
             min_length=32,
-            max_new_tokens=512
+            max_new_tokens=512,
+            num_beams=3
         )
         caption = self.processor.decode(outputs[0], skip_special_tokens=True)
         return caption
+
+class DescriptionWorker(QThread):
+    descriptionGenerated = Signal(str)
+
+    def __init__(self, describer: Describer, image_path: str|Path) -> None:
+        super().__init__()
+        self.describer = describer
+        self.image_path = image_path
+
+    def run(self) -> None:
+        description = self.describer.describe_image(self.image_path)
+        self.descriptionGenerated.emit(description)
 
 
 class DescriptionRecommendationWidget(QWidget):
@@ -55,8 +69,19 @@ class DescriptionRecommendationWidget(QWidget):
     def set_image(self, path: str|Path) -> None:
         if not isinstance(path, Path):
             path = Path(path)
-        self.description = self.describer.describe_image(path)
+
+        # Start a description generation thread
+        self.worker = DescriptionWorker(self.describer, path)
+        self.worker.descriptionGenerated.connect(self.set_description)
+        self.worker.start()
+        self.description = ""
+        self.description_text.setPlainText("Generating description...")
+        self.description_text.setStyleSheet("color: gray")
+
+    def set_description(self, description: str) -> None:
+        self.description = description
         self.update_description()
 
     def update_description(self) -> None:
         self.description_text.setPlainText(self.description)
+        self.description_text.setStyleSheet("color: white")
