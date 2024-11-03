@@ -42,8 +42,13 @@ class Describer():
 class DescriptionWorker(QThread):
     descriptionGenerated = Signal(str)
 
-    def __init__(self, describer: Describer, image_path: str|Path) -> None:
-        super().__init__()
+    def __init__(
+            self,
+            describer: Describer,
+            image_path: str|Path,
+            parent: QObject = None
+    ) -> None:
+        super().__init__(parent)
         self.describer = describer
         self.image_path = image_path
 
@@ -53,7 +58,7 @@ class DescriptionWorker(QThread):
 
 
 class DescriptionRecommendationWidget(QWidget):
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent: QObject = None) -> None:
         super().__init__(parent)
         self.describer = Describer()
         self.description = ""
@@ -71,7 +76,7 @@ class DescriptionRecommendationWidget(QWidget):
             path = Path(path)
 
         # Start a description generation thread
-        self.worker = DescriptionWorker(self.describer, path)
+        self.worker = DescriptionWorker(self.describer, path, parent=self)
         self.worker.descriptionGenerated.connect(self.set_description)
         self.worker.start()
         self.description = ""
