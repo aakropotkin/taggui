@@ -34,7 +34,10 @@ class Describer():
             **inputs,
             min_length=32,
             max_new_tokens=512,
-            num_beams=3
+            num_beams=3,
+            repetition_penalty=1.1,
+            do_sample=True,
+            num_return_sequences=1
         )
         caption = self.processor.decode(outputs[0], skip_special_tokens=True)
         return caption

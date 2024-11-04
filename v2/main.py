@@ -246,7 +246,7 @@ class ImageTagManager(QMainWindow):
         self.tag_edit_label = QLabel(self)
         self.tag_edit_label.setText("Tags")
         self.editors_layout.addWidget(self.tag_edit_label)
-        self.tag_viewer = TagAreaWidget()
+        self.tag_viewer = TagAreaWidget(parent=self)
         self.editors_layout.addWidget(self.tag_viewer)
 
         # Description editor
@@ -477,6 +477,8 @@ class ImageTagManager(QMainWindow):
                 event.modifiers() == Qt.ControlModifier
         ):
             self.save_tags_and_description
+        else:
+            super().keyPressEvent(event)
 
 
 if __name__ == "__main__":

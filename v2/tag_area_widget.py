@@ -25,7 +25,7 @@ class TagAreaWidget(QWidget):
         self.setLayout(self.main_layout)
 
         # Scroll area to hold tags
-        self.scroll_area = QScrollArea()
+        self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_widget = QWidget(self)
         self.scroll_layout = FlowLayout(self.scroll_widget)
@@ -33,7 +33,7 @@ class TagAreaWidget(QWidget):
         self.main_layout.addWidget(self.scroll_area)
 
         # Text edit for editing tags as text
-        self.text_edit = QTextEdit()
+        self.text_edit = QTextEdit(self)
         self.text_edit.setVisible(False) # Initially hidden
         self.main_layout.addWidget(self.text_edit)
 
