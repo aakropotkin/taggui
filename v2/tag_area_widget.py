@@ -90,6 +90,8 @@ class TagAreaWidget(QWidget):
 
     def add_tag(self, tag) -> None:
         """Adds a single tag if it doesn't already exist."""
+        if self.text_edit.isVisible():
+            self.setText(self.text_edit.toPlainText())
         tag = tag.strip()
         if tag and tag not in self.tags:
             self.tags.append(tag)
