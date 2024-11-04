@@ -124,7 +124,10 @@ class TagAreaWidget(QWidget):
 
     def toPlainText(self) -> str:
         """Return a comma-separated string of tags."""
-        return ', '.join(self.tags)
+        if self.text_edit.isVisible():
+            return self.text_edit.toPlainText()
+        else:
+            return ', '.join(self.tags)
 
     def setTags(self, tags: list[str]) -> None:
         """Set tags directly from a list."""
