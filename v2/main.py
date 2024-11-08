@@ -341,12 +341,16 @@ class ImageTagManager(QMainWindow):
             with open(tags_file, 'r') as f:
                 tags = f.read().replace("\n", " ").strip()
                 self.tag_viewer.setText(tags)
+        else:
+            self.tag_viewer.setTags([])
 
         # Load description
         if os.path.exists(description_file):
             with open(description_file, 'r') as f:
                 description = f.read().replace("\n", " ").strip()
                 self.description_edit.setText(description)
+        else:
+            self.description_edit.setText("")
 
         # Set image title and index
         self.image_nav.image_title.setText(current_image_name)
@@ -411,6 +415,15 @@ class ImageTagManager(QMainWindow):
             self.save_tags_and_description()
         return False
 
+    def clear_redundant_tag_recommendations(self) -> None:
+        # Sync tags from text edit mode.
+        self.tag_viewer.setText(self.tag_viewer.toPlainText())
+        # Remove tags we already have from recommendations.
+        for tag in self.tag_viewer.tags:
+            if tag in self.tag_recommendations.tags:
+                self.tag_recommendations.tags.remove(tag)
+        self.tag_recommendations.update_tags()
+
     def save_tags_and_description(self) -> None:
         if not self.image_paths:
             return
@@ -431,6 +444,7 @@ class ImageTagManager(QMainWindow):
             f.write(
                 self.description_edit.toPlainText().replace('\n', ' ').strip()
             )
+        self.clear_redundant_tag_recommendations()
 
     def on_tree_view_changed(self, index: QModelIndex) -> None:
         cancel = self.prompt_for_save_if_dirty()
