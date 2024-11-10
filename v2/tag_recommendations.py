@@ -15,6 +15,44 @@ from PySide6.QtWidgets import (
 from flow_layout import FlowLayout
 from tagger.tagger import Tagger
 
+class TagRecommendation(QWidget):
+    def __init__(
+            self,
+            tag: str,
+            parent: QWidget,
+            weight: float = 0.5
+    ) -> None:
+        super().__init__(parent)
+        self.tag = tag
+        self.weight = weight
+        self.layout = QHBoxLayout(self)
+        self.setLayout(self.layout)
+        self.label = QLabel(tag)
+        self.layout.addWidget(self.label)
+        self.add_button = QPushButton("+")
+        self.add_button.setFixedSize(20, 20)
+        self.add_button.clicked.connect(
+            lambda _, t=tag: self.parent.move_tag(t)
+        )
+        self.add_button.setStyleSheet("""
+            QPushButton {
+            border: 1px solid black;
+            border-radius: 5px;
+            }
+            QPushButton:hover {
+            background-color: dimgray
+            }
+            QPushButton:pressed {
+            background-color: white
+            }
+        """)
+        self.layout.addWidget(self.add_button)
+        self.setStyleSheet("""
+            background-color: gray;
+            color:            black;
+            border-radius:    10px;
+        """)
+
 class TagRecommendationsWidget(QWidget):
     def __init__(self, manager: QWidget, parent=None) -> None:
         super().__init__(parent)
@@ -52,39 +90,7 @@ class TagRecommendationsWidget(QWidget):
 
         # Add tags with delete button
         for tag in self.tags:
-            tag_layout = QHBoxLayout()
-
-            # Tag label
-            tag_label = QLabel(tag)
-            tag_layout.addWidget(tag_label)
-
-            # "+" button to add tag
-            add_button = QPushButton("+")
-            add_button.setFixedSize(20, 20)
-            add_button.clicked.connect(lambda _, t=tag: self.move_tag(t))
-            # TODO: You need to signal the manager
-            add_button.setStyleSheet("""
-              QPushButton {
-                border: 1px solid black;
-                border-radius: 5px;
-              }
-              QPushButton:hover {
-                background-color: dimgray
-              }
-              QPushButton:pressed {
-                background-color: white
-              }
-            """)
-            tag_layout.addWidget(add_button)
-
-            # Add to the scroll layout
-            tag_container = QWidget()
-            tag_container.setLayout(tag_layout)
-            tag_container.setStyleSheet("""
-                background-color: gray;
-                color:            black;
-                border-radius:    10px;
-            """)
+            tag_container = TagRecommendation(tag, self)
             self.scroll_layout.addWidget(tag_container)
 
     def remove_tag(self, tag) -> None:
