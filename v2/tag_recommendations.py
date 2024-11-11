@@ -9,11 +9,13 @@ from PySide6.QtWidgets import (
     QWidget,
     QLabel,
     QPushButton,
-    QTextEdit
+    QTextEdit,
+    QSizePolicy
 )
 
 from flow_layout import FlowLayout
 from tagger.tagger import Tagger
+
 
 class TagRecommendation(QWidget):
     def __init__(
@@ -25,33 +27,38 @@ class TagRecommendation(QWidget):
         super().__init__(parent)
         self.tag = tag
         self.weight = weight
-        self.layout = QHBoxLayout(self)
-        self.setLayout(self.layout)
-        self.label = QLabel(tag)
-        self.layout.addWidget(self.label)
-        self.add_button = QPushButton("+")
-        self.add_button.setFixedSize(20, 20)
-        self.add_button.clicked.connect(
-            lambda _, t=tag: self.parent.move_tag(t)
-        )
-        self.add_button.setStyleSheet("""
-            QPushButton {
-            border: 1px solid black;
-            border-radius: 5px;
-            }
-            QPushButton:hover {
-            background-color: dimgray
-            }
-            QPushButton:pressed {
-            background-color: white
-            }
-        """)
-        self.layout.addWidget(self.add_button)
+
         self.setStyleSheet("""
             background-color: gray;
             color:            black;
             border-radius:    10px;
+            padding:          5px;
         """)
+        self.setFixedHeight(50)
+
+        self.layout = QHBoxLayout(self)
+
+        self.label = QLabel(tag)
+        self.layout.addWidget(self.label)
+
+        self.add_button = QPushButton("+")
+        self.add_button.setFixedSize(20, 20)
+        self.add_button.clicked.connect(
+            lambda _, t=tag: self.parent().move_tag(t)
+        )
+        self.add_button.setStyleSheet("""
+            QPushButton {
+                border: 1px solid black;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: dimgray
+            }
+            QPushButton:pressed {
+                background-color: white
+            }
+        """)
+        self.layout.addWidget(self.add_button)
 
 class TagRecommendationsWidget(QWidget):
     def __init__(self, manager: QWidget, parent=None) -> None:
